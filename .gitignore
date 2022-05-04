@@ -41,7 +41,6 @@ jgiven-reports/
 *.bak
 *.orig
 
-
 # Ignore any log files
 *.log
 
@@ -64,3 +63,7 @@ tmp/**/*
 
 # Sometimes we do use vim
 .swp
+
+# Avoid ignoring Gradle wrapper jar and properties
+!gradle-wrapper.jar
+!gradle-wrapper.properties
