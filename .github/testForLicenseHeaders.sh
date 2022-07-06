@@ -42,6 +42,10 @@ done <<< "$(git ls-files \
     | grep -v 'requirements.txt' \
     | grep -Ev 'third-party/couchdb-lucene/*' \
     | grep -Ev '*/asciidoc/*')"
+    | grep -v 'gradlew' \
+    | grep -v 'gradlew.bat' \
+    | grep -v 'gradle/wrapper/*' \
+    | grep -Ev '.*/asciidoc/.*')"
 
 if [ "$failure" = true ]; then
     echo "test failed"

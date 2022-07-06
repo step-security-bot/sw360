@@ -1,0 +1,96 @@
+﻿# -----------------------------------------------------------------------------
+# Copyright Siemens AG, 2021.
+# Part of the SW360 Portal Project.
+#
+# This program and the accompanying materials are made
+# available under the terms of the Eclipse Public License 2.0
+# which is available at https://www.eclipse.org/legal/epl-2.0/
+#
+# SPDX-License-Identifier: EPL-2.0
+#
+# -----------------------------------------------------------------------------
+
+name: SW360
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  COUCHDB_USER: admin
+  COUCHDB_PASSWORD: password
+  COUCHDB_VERSION: 3
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Verify license headers
+      run: |
+        chmod +x .github/testForLicenseHeaders.sh
+        bash .github/testForLicenseHeaders.sh
+
+    - name: Set up JDK 11
+      run: |
+        wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | tee /usr/share/keyrings/adoptium.asc
+        echo "deb [signed-by=/usr/share/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list
+
+    - name: Prepare proxy if is set in env
+      run: |
+        [[ -z "$HTTP_PROXY" ]] || echo "Acquire::http::Proxy \"$HTTP_PROXY\";" | sudo tee /etc/apt/apt.conf.d/01proxy
+        [[ -z "$HTTPS_PROXY" ]] || echo "Acquire::https::Proxy \"$HTTPS_PROXY\";" | sudo tee -a /etc/apt/apt.conf.d/01proxy
+
+    - name: Prepare build environment
+      run: |
+        apt-get update -qq
+        DEBIAN_FRONTEND=noninteractive apt-get install -yq python3-pip build-essential libboost-dev libboost-test-dev libboost-program-options-dev libevent-dev automake libtool flex bison pkg-config libssl-dev git temurin-11-jdk net-tools curl
+        pip install mkdocs mkdocs-material
+        curl -s "https://get.sdkman.io" | bash
+        source "/root/.sdkman/bin/sdkman-init.sh"
+        sdk install gradle
+
+    - name: Setup CouchDB
+      run: |
+        bash scripts/startCouchdb.sh
+        sed -i 's/^couchdb.user\s*=/& '${COUCHDB_USER}'/' build-configuration/test-resources/couchdb-test.properties
+        sed -i 's/^couchdb.password\s*=/& '${COUCHDB_PASSWORD}'/' build-configuration/test-resources/couchdb-test.properties
+        mkdir -p /etc/sw360
+        cp ./scripts/sw360BackendRestDockerConfig/etc_sw360/couchdb-test.properties /etc/sw360/
+
+    - name: Install Thrift
+      run: |
+        chmod +x scripts/install-thrift.sh
+        bash scripts/install-thrift.sh --no-cleanup
+
+    - name: Build SW360
+      run: |
+        source "/root/.sdkman/bin/sdkman-init.sh"
+        gradle clean build -PjarDeployDir=${PWD}/deploy -PwarDeployDir=${PWD}/deploy/webapps
+
+    - name: Run PrivateProjectAccessTest
+      run: |
+        cd build-configuration
+        mvn install
+        cd ..
+        cd libraries/lib-datahandler
+        mvn test -Dtest=ProjectPermissionsVisibilityTest -DRunPrivateProjectAccessTest=true
+
+    - name: Deploy Backend and Rest Server
+      run: |
+        sudo docker build -t sw360backendrest -f sw360BackendRest.Dockerfile .
+        sudo docker run -dt --network=host sw360backendrest
+        bash scripts/sw360BackendRestDockerConfig/scripts/checkDeploymentIsSuccess.sh
+
+    - name: Create users and oauth client
+      run: bash scripts/sw360BackendRestDockerConfig/scripts/createUserAndOauthClient.sh
+
+    - name: Run Client Integration Test for Rest Api
+      run: |
+        cd clients
+        mvn clean install --no-transfer-progress -DRunRestIntegrationTest=true
+
