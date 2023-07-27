@@ -10,23 +10,23 @@
 
 #--------------------------------------------------------------------------------------------------
 # Thrift
-FROM alpine AS sw360thriftbuild
+FROM ubuntu:22.04 AS sw360thriftbuild
 
 ARG BASEDIR="/build"
 ARG THRIFT_VERSION
 
-RUN --mount=type=cache,target=/var/cache/apk \
-    apk add --update-cache \
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get -qq update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     bison \
-    build-base \
+    build-essential \
     cmake \
     curl \
     flex \
     libevent-dev \
     libtool \
-    pkgconfig \
-    bash \
-    && rm -rf /var/cache/apk/*
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY ./scripts/install-thrift.sh build_thrift.sh
 
@@ -44,7 +44,7 @@ COPY --from=sw360thriftbuild /usr/local/bin/thrift /usr/local/bin/thrift
 # So when decide to use as development, only this last stage
 # is triggered by buildkit images
 
-FROM maven:3-eclipse-temurin-17-alpine as sw360build
+FROM maven:3-eclipse-temurin-11 as sw360build
 
 ARG COUCHDB_HOST=localhost
 
@@ -56,15 +56,16 @@ WORKDIR /build
 SHELL ["/bin/bash", "-c"]
 
 # Install mkdocs to generate documentation
-RUN --mount=type=cache,target=/var/cache/apk \
-    apk add --update-cache \
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get -qq update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     gettext \
     git \
-    py3-pip \
-    py3-wheel \
+    python3-pip \
+    python3-wheel \
     zip \
     unzip \
-    && rm -rf /var/cache/apk/* \
+    && rm -rf /var/lib/apt/lists/* \
     && pip install mkdocs-material
 
 # Prepare maven from binary to avoid wrong java dependencies and proxy
@@ -107,22 +108,28 @@ RUN bash /bin/slim.sh
 
 #--------------------------------------------------------------------------------------------------
 # Runtime image without liferay
-FROM tomcat:9-jdk17 AS sw360
+FROM tomcat:9-jdk11 AS sw360
+
+ENV CATALINA_HOME=/usr/local/tomcat
 
 # Modified etc
 COPY --from=sw360build /etc/sw360 /etc/sw360
 # Downloaded jar dependencies
 COPY --from=sw360build /sw360_deploy/* /app/sw360/deploy
 # Streamlined wars
-COPY --from=sw360build /sw360_tomcat_webapps/slim-wars/*.war /usr/local/tomcat/webapps/
+COPY --from=sw360build /sw360_tomcat_webapps/slim-wars/*.war ${CATALINA_HOME}/webapps/
 # org.eclipse.sw360 jar artifacts
-COPY --from=sw360build /sw360_tomcat_webapps/*.jar /usr/local/tomcat/webapps/
+COPY --from=sw360build /sw360_tomcat_webapps/*.jar ${CATALINA_HOME}/webapps/
 # Shared streamlined jar libs
-COPY --from=sw360build /sw360_tomcat_webapps/libs/*.jar /usr/local/tomcat/shared/
+COPY --from=sw360build /sw360_tomcat_webapps/libs/*.jar ${CATALINA_HOME}/shared/
 
 # Make catalina understand shared directory
 RUN sed -i "s,shared.loader=,shared.loader=/usr/local/tomcat/shared/*.jar,g" /usr/local/tomcat/conf/catalina.properties
 RUN sed -i -e 's/<Engine/<Engine startStopThreads="0" /g' -e 's/<Host/<Host startStopThreads="0" /g' /usr/local/tomcat/conf/server.xml
+
+# Make manage gui available during test period
+COPY scripts/docker-config/conf/tomcat-users.xml ${CATALINA_HOME}/conf/tomcat-users.xml
+COPY scripts/docker-config/conf/Catalina/localhost/* ${CATALINA_HOME}/conf/Catalina/localhost/
 
 # Copy liferay/sw360 config files
 COPY --chown=$USERNAME:$USERNAME ./scripts/docker-config/portal-ext.properties /app/sw360/portal-ext.properties

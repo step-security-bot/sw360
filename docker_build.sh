@@ -52,10 +52,6 @@ image_build() {
 
 image_build sw360thrift thrift "$THRIFT_VERSION" --build-arg THRIFT_VERSION="$THRIFT_VERSION" "$@"
 
-image_build sw360 binaries "$SW360_VERSION" --build-arg MAVEN_VERSION="$MAVEN_VERSION" \
+image_build sw360 sw360 "$SW360_VERSION" --build-arg MAVEN_VERSION="$MAVEN_VERSION" \
     --secret id=sw360,src="$SECRETS" \
     --build-context "sw360thrift=docker-image://${DOCKER_IMAGE_ROOT}/thrift:latest" "$@"
-
-image_build runtime sw360 "$SW360_VERSION" \
-    --build-context "base=docker-image://${DOCKER_IMAGE_ROOT}/base:latest" \
-    --build-context "sw360=docker-image://${DOCKER_IMAGE_ROOT}/binaries:latest" "$@"
