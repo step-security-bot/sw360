@@ -32,7 +32,6 @@
     <module>utils</module>
     <module>libraries</module>
     <module>backend</module>
-    <module>frontend</module>
     <module>rest</module>
     <module>clients</module>
   </modules>
@@ -123,16 +122,6 @@
     <json.version>20230227</json.version>
     <junit-dataprovider.version>1.13.1</junit-dataprovider.version>
     <junit.version>4.13.2</junit.version>
-    <liferay.css.builder.version>3.1.2</liferay.css.builder.version>
-    <liferay.frontend.css.common.version>6.0.3</liferay.frontend.css.common.version>
-    <liferay.frontend.theme.styled.version>6.0.27</liferay.frontend.theme.styled.version>
-    <liferay.frontend.theme.unstyled.version>6.0.29</liferay.frontend.theme.unstyled.version>
-    <liferay.petra.function.version>5.1.2</liferay.petra.function.version>
-    <liferay.portal.kernel.version>43.0.1</liferay.portal.kernel.version>
-    <liferay.portal.tools.theme.builder.version>1.1.9</liferay.portal.tools.theme.builder.version>
-    <liferay.util.bridges.version>9.0.6</liferay.util.bridges.version>
-    <liferay.util.java.version>17.1.2</liferay.util.java.version>
-    <liferay.util.taglib.version>8.4.8</liferay.util.taglib.version>
     <log4j2.version>2.19.0</log4j2.version>
     <lucene.version>6.6.6</lucene.version>
     <mockito.version>4.7.0</mockito.version>
@@ -161,16 +150,8 @@
     <wiremock.version>2.26.0</wiremock.version>
     <javax.servlet-api.version>4.0.1</javax.servlet-api.version>
 
-    <!--  User must provide below property configuration based on his/her liferay deployment
-    environment -->
     <base.deploy.dir>${session.executionRootDirectory}/deploy</base.deploy.dir>
 
-    <!--
-            This is were the liferay OSGi modules go to on upload:
-                - frontend/*
-                - libraries/*
-        -->
-    <liferay.deploy.dir>${base.deploy.dir}/tomcat</liferay.deploy.dir>
     <!--
             This is were the backend services go to on upload:
                 - backend/svc/*
@@ -514,12 +495,6 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>com.liferay</groupId>
-        <artifactId>com.liferay.petra.lang</artifactId>
-        <version>3.0.0</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
         <groupId>nl.jqno.equalsverifier</groupId>
         <artifactId>equalsverifier</artifactId>
         <version>3.1.12</version>
@@ -656,11 +631,6 @@
               <groupId>biz.aQute.bnd</groupId>
               <artifactId>biz.aQute.bndlib</artifactId>
               <version>3.5.0</version>
-            </dependency>
-            <dependency>
-              <groupId>com.liferay</groupId>
-              <artifactId>com.liferay.ant.bnd</artifactId>
-              <version>2.0.50</version>
             </dependency>
           </dependencies>
           <executions>

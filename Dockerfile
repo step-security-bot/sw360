@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1.4
-#
 # Copyright Siemens AG, 2020. Part of the SW360 Portal Project.
 # Copyright BMW CarIT GmbH, 2021.
 #
@@ -10,114 +8,43 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-#-----------------------------------------------------------------------------------
-# Base image
-# We need use JDK, JRE is not enough as Liferay do runtime changes and require javac
-FROM eclipse-temurin:11-jdk-jammy AS base
-
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US:en
-ENV LC_ALL=en_US.UTF-8
-
-# Set versions as arguments
-ARG LIFERAY_VERSION
-ARG LIFERAY_SOURCE
-
-ENV LIFERAY_HOME=/app/sw360
-ENV LIFERAY_INSTALL=/app/sw360
-
-ARG USERNAME=sw360
-ARG USER_ID=1000
-ARG USER_GID=$USER_ID
-ARG HOMEDIR=/workspace
-ENV HOME=$HOMEDIR
-
-# Base system
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update -qq \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    dos2unix \
-    gnupg2 \
-    iproute2 \
-    iputils-ping \
-    less \
-    libarchive-tools \
-    locales \
-    lsof \
-    netbase \
-    openssl \
-    procps \
-    tzdata \
-    sudo \
-    unzip \
-    zip \
-    && rm -rf /var/lib/apt/lists/*
-
-# Prepare system for non-priv user
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd \
-    --uid $USER_ID \
-    --gid $USER_GID \
-    --shell /bin/bash \
-    --home-dir $HOMEDIR \
-    --create-home $USERNAME
-
-# sudo support
-RUN echo "$USERNAME ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
-
-# Unpack liferay as sw360 and link current tomcat version
-# to tomcat to make future proof updates
-RUN --mount=type=cache,target=/var/cache/deps \
-    mkdir -p /app/sw360 \
-    && if [ ! -f /var/cache/deps/"$LIFERAY_SOURCE" ]; then \
-    curl -o /var/cache/deps/"$LIFERAY_SOURCE" -JL https://github.com/liferay/liferay-portal/releases/download/"$LIFERAY_VERSION"/"$LIFERAY_SOURCE"; \
-    fi \
-    && tar -xzf /var/cache/deps/"$LIFERAY_SOURCE" -C /app/sw360 --strip-components=1 \
-    && chown -R $USERNAME:$USERNAME /app \
-    && ln -s /app/sw360/tomcat-* /app/sw360/tomcat
-
-WORKDIR /app/sw360
-ENTRYPOINT [ "/bin/bash" ]
-
 #--------------------------------------------------------------------------------------------------
 # Thrift
-FROM ubuntu:jammy AS sw360thriftbuild
+FROM alpine AS sw360thriftbuild
 
 ARG BASEDIR="/build"
 ARG THRIFT_VERSION
 
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get -qq update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk add --update-cache \
     bison \
-    build-essential \
+    build-base \
     cmake \
     curl \
     flex \
     libevent-dev \
     libtool \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
+    pkgconfig \
+    bash \
+    && rm -rf /var/cache/apk/*
 
 COPY ./scripts/install-thrift.sh build_thrift.sh
 
 RUN --mount=type=tmpfs,target=/build \
     --mount=type=cache,target=/var/cache/deps \
-    ./build_thrift.sh
+    chmod a+x build_thrift.sh \
+    && ./build_thrift.sh
 
 FROM scratch AS sw360thrift
 COPY --from=sw360thriftbuild /usr/local/bin/thrift /usr/local/bin/thrift
 
 #--------------------------------------------------------------------------------------------------
-# SW360
+# SW360 No Liferay
 # We build sw360 and create real image after everything is ready
 # So when decide to use as development, only this last stage
 # is triggered by buildkit images
 
-FROM maven:3.9-eclipse-temurin-11 as sw360build
+FROM maven:3-eclipse-temurin-17-alpine as sw360build
 
 ARG COUCHDB_HOST=localhost
 
@@ -129,16 +56,15 @@ WORKDIR /build
 SHELL ["/bin/bash", "-c"]
 
 # Install mkdocs to generate documentation
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update -qq \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends \
-    gettext-base \
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk add --update-cache \
+    gettext \
     git \
-    python3-pip \
-    python3-wheel \
+    py3-pip \
+    py3-wheel \
     zip \
     unzip \
-    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/apk/* \
     && pip install mkdocs-material
 
 # Prepare maven from binary to avoid wrong java dependencies and proxy
@@ -168,7 +94,6 @@ RUN --mount=type=bind,target=/build/sw360,rw \
     -Dsurefire.failIfNoSpecifiedTests=false \
     -Dbase.deploy.dir=. \
     -Djars.deploy.dir=/sw360_deploy \
-    -Dliferay.deploy.dir=/sw360_deploy \
     -Dbackend.deploy.dir=/sw360_tomcat_webapps \
     -Drest.deploy.dir=/sw360_tomcat_webapps \
     -Dhelp-docs=true
@@ -180,43 +105,28 @@ COPY scripts/create-slim-war-files.sh /bin/slim.sh
 
 RUN bash /bin/slim.sh
 
-FROM scratch AS sw360
-COPY --from=sw360build /etc/sw360 /etc/sw360
-COPY --from=sw360build /sw360_deploy /sw360_deploy
-COPY --from=sw360build /sw360_tomcat_webapps /sw360_tomcat_webapps
-
 #--------------------------------------------------------------------------------------------------
-# Runtime image
-FROM base AS runtime
-
-ARG DEBUG
-ARG USERNAME=sw360
-
-WORKDIR /app/
-
-# Make sw360 dir owned byt the user
-RUN chown -R $USERNAME:$USERNAME /app/sw360
-
-USER $USERNAME
+# Runtime image without liferay
+FROM tomcat:9-jdk17 AS sw360
 
 # Modified etc
-COPY --chown=$USERNAME:$USERNAME --from=sw360 /etc/sw360 /etc/sw360
+COPY --from=sw360build /etc/sw360 /etc/sw360
 # Downloaded jar dependencies
-COPY --chown=$USERNAME:$USERNAME --from=sw360 /sw360_deploy/* /app/sw360/deploy
+COPY --from=sw360build /sw360_deploy/* /app/sw360/deploy
 # Streamlined wars
-COPY --chown=$USERNAME:$USERNAME --from=sw360 /sw360_tomcat_webapps/slim-wars/*.war /app/sw360/tomcat/webapps/
+COPY --from=sw360build /sw360_tomcat_webapps/slim-wars/*.war /usr/local/tomcat/webapps/
 # org.eclipse.sw360 jar artifacts
-COPY --chown=$USERNAME:$USERNAME --from=sw360 /sw360_tomcat_webapps/*.jar /app/sw360/tomcat/webapps/
+COPY --from=sw360build /sw360_tomcat_webapps/*.jar /usr/local/tomcat/webapps/
 # Shared streamlined jar libs
-COPY --chown=$USERNAME:$USERNAME --from=sw360 /sw360_tomcat_webapps/libs/*.jar /app/sw360/tomcat/shared/
+COPY --from=sw360build /sw360_tomcat_webapps/libs/*.jar /usr/local/tomcat/shared/
 
 # Make catalina understand shared directory
-RUN dos2unix /app/sw360/tomcat/conf/catalina.properties \
-    && sed -i "s,shared.loader=,shared.loader=/app/sw360/tomcat/shared/*.jar,g" /app/sw360/tomcat/conf/catalina.properties
+RUN sed -i "s,shared.loader=,shared.loader=/usr/local/tomcat/shared/*.jar,g" /usr/local/tomcat/conf/catalina.properties
+RUN sed -i -e 's/<Engine/<Engine startStopThreads="0" /g' -e 's/<Host/<Host startStopThreads="0" /g' /usr/local/tomcat/conf/server.xml
 
 # Copy liferay/sw360 config files
 COPY --chown=$USERNAME:$USERNAME ./scripts/docker-config/portal-ext.properties /app/sw360/portal-ext.properties
-COPY --chown=$USERNAME:$USERNAME ./scripts/docker-config/entry_point.sh /app/entry_point.sh
+COPY --chown=$USERNAME:$USERNAME ./scripts/docker-config/noliferay_entrypoint.sh /entrypoint.sh
 
 # Tomcat manager for debugging portlets
 COPY --chown=$USERNAME:$USERNAME --from=tomcat:9.0.56-jdk11 /usr/local/tomcat/webapps.dist/manager /app/sw360/tomcat/webapps/manager
@@ -230,7 +140,4 @@ RUN --mount=type=bind,target=/build/sw360,rw \
 
 STOPSIGNAL SIGINT
 
-WORKDIR /app/sw360
-
-ENTRYPOINT [ "/app/entry_point.sh" ]
-
+ENTRYPOINT [ "/entrypoint.sh" ]
