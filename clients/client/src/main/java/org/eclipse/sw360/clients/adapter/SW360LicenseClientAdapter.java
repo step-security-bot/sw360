@@ -75,7 +75,7 @@ public interface SW360LicenseClientAdapter {
 
     /**
      * Deletes the License with the given ID. It
-     * inspects the {@link StatusCode} returned by SW360 and throws an
+     * inspects the StatusCode returned by SW360 and throws an
      * exception if the operation was not successful.
      *
      * @param licenseId of the License to delete

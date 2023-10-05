@@ -99,7 +99,7 @@ public interface SW360ProjectClientAdapterAsync {
 
     /**
      * Deletes the project with the given ID. It
-     * inspects the {@link StatusCode} returned by SW360 and throws an
+     * inspects the {link StatusCode} returned by SW360 and throws an
      * exception if the operation was not successful.
      *
      * @return status code of request

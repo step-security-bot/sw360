@@ -15,7 +15,7 @@
     <parent>
         <artifactId>rest</artifactId>
         <groupId>org.eclipse.sw360</groupId>
-        <version>${revision}</version>
+        <version>17.0.1-m2</version>
     </parent>
 
     <artifactId>authorization-server</artifactId>

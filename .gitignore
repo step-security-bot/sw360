@@ -64,3 +64,4 @@ tmp/**/*
 
 # Sometimes we do use vim
 .swp
+.m2
