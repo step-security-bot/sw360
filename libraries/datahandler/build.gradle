@@ -11,7 +11,6 @@
 plugins {
     id "biz.aQute.bnd.builder"
     id 'org.eclipse.sw360.java-conventions'
-    id "org.jruyi.thrift"
 }
 
 dependencies {
@@ -53,13 +52,19 @@ tasks.register('testsJar', Jar) {
     from(sourceSets.test.output)
 }
 
-compileThrift {
-    Set<File> files = new HashSet<>()
-    files.add(file("src/test/thrift/test.thrift"))
-    sourceItems += files
-    outputDir = file('build/thrift')
-    createGenFolder = false
-}
+// thrift {
+//     sourceDirs = [ "src/test/thrift/", "src/main/thrift/" ]
+//     outputDir = "build/thrift"
+//     skipIfExists = true
+// }
+
+// compileThrift {
+//     Set<File> files = new HashSet<>()
+//     files.add(file("src/test/thrift/test.thrift"))
+//     sourceItems += files
+//     outputDir = file('build/thrift')
+//     createGenFolder = false
+// }
 
 sourceSets {
     main.java.srcDirs += 'build/thrift'

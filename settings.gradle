@@ -10,7 +10,6 @@
 
 pluginManagement {
   plugins {
-    id "org.jruyi.thrift" version "0.4.2"
     id "biz.aQute.bnd.builder" version "6.3.1"
   }
 }
@@ -31,7 +30,7 @@ include(':http-support')
 include(':importers')
 include(':libraries')
 include(':log4j-osgi-support')
-include(':resource-server')
+// include(':resource-server')
 include(':rest-common')
 include(':rest')
 include(':src-attachments')
@@ -78,7 +77,7 @@ project(":datahandler").projectDir = file('libraries/datahandler')
 project(":exporters").projectDir = file('libraries/exporters')
 project(":http-support").projectDir = file('clients/http-support')
 project(":importers").projectDir = file('libraries/importers')
-project(":resource-server").projectDir = file('rest/resource-server')
+// project(":resource-server").projectDir = file('rest/resource-server')
 project(":rest-common").projectDir = file('rest/rest-common')
 project(":src-attachments").projectDir = file('backend/src/src-attachments')
 project(":src-changelogs").projectDir = file('backend/src/src-changelogs')

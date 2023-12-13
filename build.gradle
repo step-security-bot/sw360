@@ -9,8 +9,12 @@
 */
 
 plugins {
-    id 'org.eclipse.sw360.java-conventions'
+    id 'java'
+    id 'org.eclipse.sw360.thrift' version '1.0' apply false
 }
+
+apply plugin: 'org.eclipse.sw360.thrift'
+
 
 subprojects {
     tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }
@@ -42,8 +46,10 @@ task cleanDeploy(type:Delete) {
 
 tasks.clean.dependsOn(tasks.cleanDeploy)
 
-// Setup proxy dinamically if exists
+// Register plugin list task
+tasks.register('listPlugins', ListPluginsTask)
 
+// Setup proxy dinamically if exists
 task setHttpProxyFromEnv {
     def map = ['HTTP_PROXY': 'http', 'HTTPS_PROXY': 'https']
     for (e in System.getenv()) {
