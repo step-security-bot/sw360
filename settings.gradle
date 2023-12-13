@@ -1,5 +1,5 @@
 /*
-* Copyright BMW CarIT GmbH, 2021.
+* Copyright Helio Chissini de Castro, 2023
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -27,11 +27,9 @@ include(':clients')
 include(':commonIO')
 include(':datahandler')
 include(':exporters')
-include(':frontend')
 include(':http-support')
 include(':importers')
 include(':libraries')
-include(':liferay-theme')
 include(':log4j-osgi-support')
 include(':resource-server')
 include(':rest-common')
@@ -80,7 +78,6 @@ project(":datahandler").projectDir = file('libraries/datahandler')
 project(":exporters").projectDir = file('libraries/exporters')
 project(":http-support").projectDir = file('clients/http-support')
 project(":importers").projectDir = file('libraries/importers')
-project(":liferay-theme").projectDir = file('frontend/liferay-theme')
 project(":resource-server").projectDir = file('rest/resource-server')
 project(":rest-common").projectDir = file('rest/rest-common')
 project(":src-attachments").projectDir = file('backend/src/src-attachments')
@@ -117,4 +114,3 @@ project(":svc-users").projectDir = file('backend/svc/svc-users')
 project(":svc-vendors").projectDir = file('backend/svc/svc-vendors')
 project(":svc-vulnerabilities").projectDir = file('backend/svc/svc-vulnerabilities')
 project(":svc-wsimport").projectDir = file('backend/svc/svc-wsimport')
-project(":sw360-portlet").projectDir = file('frontend/sw360-portlet')
