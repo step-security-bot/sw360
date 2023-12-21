@@ -9,7 +9,6 @@
 */
 
 plugins {
-    id "biz.aQute.bnd.builder"
     id 'org.eclipse.sw360.java-conventions'
 }
 
@@ -26,4 +25,4 @@ dependencies {
 
 description = 'commonIO'
 tasks.build.dependsOn(deployJar)
-tasks.deployJar.dependsOn(jar)
+// tasks.deployJar.dependsOn(jar)

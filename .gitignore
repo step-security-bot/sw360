@@ -70,3 +70,6 @@ tmp/**/*
 # Avoid ignoring Gradle wrapper jar and properties
 !gradle-wrapper.jar
 !gradle-wrapper.properties
+
+# Apple files
+.DS_Store

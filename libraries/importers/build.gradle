@@ -37,4 +37,4 @@ dependencies {
 
 description = 'importers'
 tasks.build.dependsOn(deployJar)
-tasks.deployJar.dependsOn(jar)
+// tasks.deployJar.dependsOn(jar)

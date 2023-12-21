@@ -9,9 +9,10 @@
 */
 
 plugins {
-    id "biz.aQute.bnd.builder"
     id 'org.eclipse.sw360.java-conventions'
 }
+
+apply plugin: org.eclipse.sw360.ThriftPlugin
 
 dependencies {
     compileOnly  libs.jetbrains.annotations
@@ -44,7 +45,7 @@ dependencies {
 
 description = 'datahandler'
 tasks.build.dependsOn(deployJar)
-tasks.deployJar.dependsOn(jar)
+// tasks.deployJar.dependsOn(jar)
 
 
 tasks.register('testsJar', Jar) {
@@ -52,11 +53,9 @@ tasks.register('testsJar', Jar) {
     from(sourceSets.test.output)
 }
 
-// thrift {
-//     sourceDirs = [ "src/test/thrift/", "src/main/thrift/" ]
-//     outputDir = "build/thrift"
-//     skipIfExists = true
-// }
+thrift {
+    sourceDirs = [ "src/test/thrift/", "src/main/thrift/" ]
+}
 
 // compileThrift {
 //     Set<File> files = new HashSet<>()

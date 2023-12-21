@@ -9,12 +9,8 @@
 */
 
 plugins {
-    id 'java'
-    id 'org.eclipse.sw360.thrift' version '1.0' apply false
+    id 'java-library-convention'
 }
-
-apply plugin: 'org.eclipse.sw360.thrift'
-
 
 subprojects {
     tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }
@@ -33,21 +29,13 @@ subprojects {
         exclude "*-tests.jar"
     }
 
-    test {
-        testLogging {
-            exceptionFormat = 'full'
-        }
-    }
 }
 
 task cleanDeploy(type:Delete) {
    delete project.hasProperty('deployDir') ? "${deployDir}" : "${rootProject.projectDir}/deploy"
 }
 
-tasks.clean.dependsOn(tasks.cleanDeploy)
-
-// Register plugin list task
-tasks.register('listPlugins', ListPluginsTask)
+//tasks.clean.dependsOn(tasks.cleanDeploy)
 
 // Setup proxy dinamically if exists
 task setHttpProxyFromEnv {
@@ -62,4 +50,4 @@ task setHttpProxyFromEnv {
         }
     }
 }
-build.dependsOn setHttpProxyFromEnv
+//build.dependsOn setHttpProxyFromEnv
