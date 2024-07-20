@@ -14,20 +14,20 @@ name: Docker Build
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Midnight
+    - cron: "0 0 * * *" # Midnight
   workflow_dispatch:
     inputs:
       invalidate-cache:
-        description: 'Build all images disregarding exists same version'
+        description: "Build all images disregarding exists same version"
         required: false
       debug:
-        description: 'Debug docker build'
+        description: "Debug docker build"
         required: false
   push:
     tags:
-      - 'sw360-*'
+      - "sw360-*"
     paths-ignore:
-      - '**.md'
+      - "**.md"
 
 env:
   REGISTRY: ghcr.io
@@ -48,9 +48,9 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          cache: 'maven'
-          distribution: 'temurin'
+          java-version: "17"
+          cache: "maven"
+          distribution: "temurin"
 
       - name: Get revision from pom.xml
         id: pom_version
@@ -72,9 +72,10 @@ jobs:
           cat .versions >> $GITHUB_ENV
 
       - name: Build thrift image
-        uses: heliocastro/docker-build-control@v1
+        uses: heliocastro/docker-build-control@v4
         with:
           name: thrift
+          target: sw360thriftbuild
           token: ${{ secrets.GITHUB_TOKEN }}
           version: ${{ env.THRIFT_VERSION }}
           invalidate-cache: ${{ inputs.invalidate-cache }}
@@ -99,7 +100,7 @@ jobs:
           cat .versions >> $GITHUB_ENV
 
       - name: Build binary image
-        uses: heliocastro/docker-build-control@v1
+        uses: heliocastro/docker-build-control@v4
         with:
           name: binaries
           version: ${{ needs.sw360_version.outputs.sw360_version }}
