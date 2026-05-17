@@ -45,3 +45,7 @@ repos:
               libraries/datahandler/src/main/java/org/eclipse/sw360/datahandler/thrift/.*|
               .*/target/.*
           )$
+  - repo: https://github.com/gherynos/pre-commit-java
+    rev: v0.2.4
+    hooks:
+      - id: Checkstyle
